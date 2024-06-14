@@ -5,7 +5,7 @@ from typing import NamedTuple
 class Cell(Enum):
     EMPTY = 255
     BLOCKED = 0
-    PATH = [94, 191, 59]
+    PATH = [167, 121, 78]
 
 
 class MazePosition(NamedTuple):

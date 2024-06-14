@@ -20,21 +20,25 @@ if __name__ == '__main__':
     export_dir.mkdir(exist_ok=True, parents=True)
 
     # Scan all runs and find current run id
-    prev_runs = (int(d.name) for d in export_dir.iterdir())
+    prev_runs = (int(d.name) for d in export_dir.iterdir() if d.is_dir())
     try:
-        run_id = max(prev_runs) + 1
+        id_max = max(prev_runs)
+        _exp_d = export_dir/str(id_max)
+        if list(_exp_d.iterdir()):
+            run_id = id_max + 1
+        else:
+            run_id = id_max
     except ValueError:
         run_id = 1
 
     export_dir /= str(run_id)
     export_dir.mkdir(exist_ok=True, parents=True)
 
-    map_name = '5_2'
+
+    map_name = '7_2'
     map_path = import_dir / f'{map_name}.png'
 
     map_1 = Map(img_path=map_path,
-                rob_x=555,
-                rob_y=205,
                 heuristic_gain=1)
 
     path_nodes = map_1.run()
@@ -59,6 +63,8 @@ if __name__ == '__main__':
     current_position = list(path[0])
     pose_history = []
 
+
+
     # Initialize robot controller
     robot = Robotino4()
 
@@ -66,7 +72,6 @@ if __name__ == '__main__':
     odometry = robot.get_odometry()
     shift_odometry = np.array([odometry[0], odometry[1]])
     rot_odometry = odometry[2]
-
 
     Vx = 0
     Vy = 0
@@ -76,7 +81,7 @@ if __name__ == '__main__':
     current_time = time.time()
     while pp.current_index < len(path) - 1:
         if time.time() - current_time < period_s:
-            print(f'Time diff: {time.time()-current_time}')
+            print(f'Time diff: {time.time() - current_time}')
             # Update timer
             current_time = time.time()
             # Update pose history
@@ -96,17 +101,15 @@ if __name__ == '__main__':
             current_position[1] = odometry[1]
 
             # Debug info
-            print(f'Idx: {pp.current_index}/{len(path)-1}')
+            print(f'Idx: {pp.current_index}/{len(path) - 1}')
             print(f"Position: {current_position}, Vx: {Vx}, Vy: {Vy}")
 
     dist = 1
-    while dist > 0.001:
-        dx = path[-1][0] - current_position[0]
-        dy = path[-1][1] - current_position[1]
-        dist = np.hypot(dx, dy)
-        print(dist)
+    while dist > 0.01:
+        dist = np.hypot(*(path[-1] - current_position))
 
         robot.set_omnidrive(vx=Vx, vy=Vy)
+
         odometry = np.array(robot.get_odometry()[:2])
         odometry -= shift_odometry
         odometry = rotate(odometry, -rot_odometry)
@@ -114,6 +117,8 @@ if __name__ == '__main__':
         # Update the robot's state
         current_position[0] = odometry[0]
         current_position[1] = odometry[1]
+
+        pose_history.append(current_position.copy())
 
     print("Path following complete.")
 
@@ -137,8 +142,8 @@ if __name__ == '__main__':
 
     # Map with paths
     pose_history = np.array(pose_history) + shift_path  # Convert to global coordinates
-    _conv = to_grid(1/cell_to_m)
+    _conv = to_grid(1 / cell_to_m)
     history_nodes = [MazePosition(_conv(p[0]), _conv(p[1])) for p in pose_history]
-    mark_path(map_1.img_map, history_nodes, [219, 39, 153])
+    mark_path(map_1.img_map, history_nodes, [242, 142, 43][::-1])
     img = map_1.show_original_image()
     cv.imwrite(export_dir / 'map.png', img)

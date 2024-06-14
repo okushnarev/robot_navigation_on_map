@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -29,7 +30,6 @@ class PurePursuit:
             robot_vector = np.array(current_position) - np.array(segment_start)
             segment_length = self.get_distance(segment_start, segment_end)
             projection_length = np.dot(robot_vector, segment_vector) / segment_length
-            print(projection_length)
             if projection_length < 0:
                 look_ahead_point = segment_start
             elif projection_length > segment_length:
@@ -65,12 +65,10 @@ class PurePursuit:
 if __name__ == "__main__":
 
     import_dir = Path('../map_from_cam/maps')
-    name = '5_2'
+    name = '7_2'
     import_path = import_dir / f'{name}.png'
 
     map_1 = Map(img_path=import_path,
-                rob_x=555,
-                rob_y=205,
                 heuristic_gain=1)
 
     path_nodes = map_1.run()
@@ -89,6 +87,9 @@ if __name__ == "__main__":
     current_position = list(path[0])
     pose_history = []
 
+    Vx = 0
+    Vy = 0
+
     while pp.current_index < len(path) - 1:
         # Update pose history
         pose_history.append(current_position.copy())
@@ -106,7 +107,19 @@ if __name__ == "__main__":
         print(f"Position: {current_position}, Vx: {Vx}, Vy: {Vy}")
         """
 
+    dist = 1
+    while dist > 0.01:
+
+        dist = np.hypot(*(path[-1] - current_position))
+
+        current_position[0] += Vx * 0.1
+        current_position[1] += Vy * 0.1
+
+        pose_history.append(current_position.copy())
+
     print("Path following complete.")
+
+
 
     x, y = zip(*path)
     plt.plot(y, x, label='Desired')
@@ -123,5 +136,6 @@ if __name__ == "__main__":
     pose_history = np.array(pose_history)
     pose_history += shift
     history_nodes = [MazePosition(int(p[0] / cell_to_m), int(p[1] / cell_to_m)) for p in pose_history]
-    mark_path(map_1.img_map, history_nodes, [219, 39, 153])
+    mark_path(map_1.img_map, history_nodes, [242, 142, 43][::-1])
     map_1.show_original_image()
+    cv.waitKey(0)

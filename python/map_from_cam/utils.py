@@ -1,5 +1,6 @@
 import math
 from dataclasses import dataclass
+from typing import NamedTuple
 
 import cv2 as cv
 
@@ -14,13 +15,17 @@ def px_to_mm(dist_px: int) -> float:
     return dist_px * mm_in_px
 
 
-print(mm_to_px(450))
+print(mm_to_px(10))
 
 
 @dataclass
 class Patch:
     center: tuple
     container: list
+
+class Waypoint(NamedTuple):
+    x: int
+    y: int
 
 
 def draw_filled_square(img, center, side, color=(255, 0, 0)) -> Patch:
@@ -66,3 +71,25 @@ def undo_patch(img, patch):
 
     # Place the patch back onto the image
     img[top_left[1]:bottom_right[1] + 1, top_left[0]:bottom_right[0] + 1] = patch.container
+
+
+def put_text_top_center(image, text):
+    # Define the text properties
+    font = cv.FONT_HERSHEY_SIMPLEX
+    font_scale = 1
+    font_color = [102, 10, 35][::-1]
+    font_thickness = 2
+
+    # Get the text size
+    (text_width, text_height), _ = cv.getTextSize(text, font, font_scale, font_thickness)
+
+    # Calculate the position to center the text at the top
+    image_width = image.shape[1]
+    text_x = (image_width - text_width) // 2
+    text_y = text_height + 10  # 10 pixels from the top
+
+    # Put the text on the image
+    cv.putText(image, text, (text_x, text_y), font, font_scale, font_color, font_thickness)
+
+    # Return the image with the text
+    return image
